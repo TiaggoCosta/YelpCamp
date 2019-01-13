@@ -10,6 +10,15 @@
     padding: 9px;
 }
 
+.centralizado {
+    text-align: center;
+}
+
+.formulario {
+    width: 30%;
+    margin: 25px auto;
+}
+
 #delete-form {
     display: inline;
 }
