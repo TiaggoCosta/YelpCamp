@@ -15,10 +15,9 @@ router.get("/", function(req, res){
            } else {
                if(allCampgrounds.length < 1){
                    req.flash("info", "No match for '" + req.query.search + "', showing all campgrounds.");
-                   req.query.search = null;
                    res.redirect("campgrounds/");
-               }
-               res.render("campgrounds/index",{campgrounds:allCampgrounds});
+               } else 
+                res.render("campgrounds/index",{campgrounds:allCampgrounds});
            }
         });
     } else {
