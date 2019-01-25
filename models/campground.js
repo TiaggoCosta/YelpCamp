@@ -6,6 +6,10 @@ var campgroundSchema = new mongoose.Schema({
    image: String,
    imageId: String,
    description: String,
+   location: {type:String, default: "Esteio"},
+   lat: {type:Number, default: -29.852296},
+   lng: {type:Number, default: -51.178841},
+   createdAt: { type: Date, default: Date.now },
    author: {
       id: {
          type: mongoose.Schema.Types.ObjectId,

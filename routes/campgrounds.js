@@ -2,6 +2,7 @@ var express = require("express");
 var router  = express.Router();
 var Campground = require("../models/campground");
 var middleware = require("../middleware");
+var NodeGeocoder = require('node-geocoder');
 var multer = require('multer');
 var storage = multer.diskStorage({
   filename: function(req, file, callback) {
@@ -23,6 +24,15 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY, 
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+var options = {
+  provider: 'google',
+  httpAdapter: 'https',
+  apiKey: process.env.GEOCODER_API_KEY,
+  formatter: null
+};
+ 
+var geocoder = NodeGeocoder(options);
 
 //INDEX - show all campgrounds
 router.get("/", function(req, res){
@@ -54,11 +64,20 @@ router.get("/", function(req, res){
 
 //CREATE - add new campground to DB
 router.post("/", middleware.isLoggedIn, upload.single('image'), function(req, res) {
-    cloudinary.v2.uploader.upload(req.file.path, function(err, result) {
+    cloudinary.v2.uploader.upload(req.file.path, async function(err, result) {
       if(err) {
         req.flash('error', err.message);
         return res.redirect('back');
       }
+      await geocoder.geocode(req.body.campground.location, function (err, data) {
+        if (err || !data.length) {
+          req.flash('error', 'Invalid address');
+          return res.redirect('back');
+        }
+        req.body.campground.lat = data[0].latitude;
+        req.body.campground.lng = data[0].longitude;
+        req.body.campground.location = data[0].formattedAddress;
+        });
       // add cloudinary url for the image to the campground object under image property
       req.body.campground.image = result.secure_url;
       // add image's public_id to campground object
@@ -107,7 +126,6 @@ router.get("/:id/edit", middleware.checkCampgroundOwnership, function(req, res){
 
 // UPDATE CAMPGROUND ROUTE
 router.put("/:id", upload.single('image'), function(req, res){
-    console.log(req.params);
     Campground.findById(req.params.id, async function(err, campground){
         if(err){
             req.flash("error", err.message);
@@ -124,6 +142,15 @@ router.put("/:id", upload.single('image'), function(req, res){
                   return res.redirect("back");
               }
             }
+            await geocoder.geocode(req.body.location, function (err, data) {
+                if (err || !data.length) {
+                  req.flash('error', 'Invalid address');
+                  return res.redirect('back');
+                }
+                campground.lat = data[0].latitude;
+                campground.lng = data[0].longitude;
+                campground.location = data[0].formattedAddress;
+            }); 
             campground.name = req.body.campground.name;
             campground.price = req.body.campground.price;
             campground.description = req.body.campground.description;
