@@ -1,35 +1,41 @@
 <% include ../partials/header %>
-
-<div class="row">
-    <div class="col-md-4">
-        <h1><%= user.firstName + " " + user.lastName%></h1>
-        <div class="thumbnail">
-            <img src="<%= user.avatar %>" alt="user profile image">
-            <div class="caption"><a href="mailto:<%= user.email %>"><%= user.email %></a></div>
+<div class="card">
+    <div class="card-header text-white bg-dark "><h3><%= user.firstName + " " + user.lastName%></h3></div>
+        <div class="card-block text-white bg-dark">
+            <div class="row">
+                <div class="col-md-4 col pr-md-0">
+                    <div class="card text-white bg-dark col-card mb-3">
+                    <img class="card-img-top" src="<%= user.avatar %>" alt="<%= user.name %>">
+                        <div class="card-body">
+                        <h5 class="card-title"><%= user.name %></h5>
+                        <a class="card-link" href="mailto:<%= user.email %>"><%= user.email %></a>
+                        <hr>
+                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.We use cookies to provide and improve our services. By using our site, you consent to cookies.We use cookies to provide and
+                        We use cookies to provide and improve our services. By using our site,
+                        you consent to cookies.
+                        </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8 float-right col pl-md-0">
+                    <div class="card text-white bg-dark col-card mb-3">
+                        <div class="card-header text-center"><h3><%= user.username %>'s campgrounds:</h3></div>
+                            <div class="card-body">
+                            <p class="card-text">
+                            <ul>
+                            <% campgrounds.forEach(function(campground){ %>
+                                <li><a href="/campgrounds/<%= campground.id %>"><%= campground.name %></a></li>
+                            <% }); %>
+                            </ul>
+                            </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        We use cookies to provide and improve our services. By using our site, you consent to cookies.We use cookies to provide and
-        We use cookies to provide and improve our services. By using our site,
-        you consent to cookies.
-        We use cookies to provide and improve our services. By using our site, you consent to cookies.
-        We use cookies to provide and improve our services. By using our site, you consent 
-        to cookies.
-        
-        We use cookies to provide and improve our services.
-        By using our site, you consent to cookies.
-        We use cookies to provide and improve our serv
-        ices. By using our site, you consent to cookies.
-        We use cookies to provide and improve our services. 
-        By using our site, you consent to cookies.
-        We use cookies to provide and improve our services. By using our site, you consent to cookies.
+        <!--/card-block-->
     </div>
-    <div class="col-md-8">
-        <h3><%= user.username %>'s campgrounds:</h3>
-        <ul>
-            <% campgrounds.forEach(function(campground){ %>
-                <li><a href="/campgrounds/<%= campground.id %>"><%= campground.name %></a></li>
-            <% }); %>
-        </ul>
-    </div>
+    <!-- /2 columns card -->
 </div>
-
 <% include ../partials/footer %>
