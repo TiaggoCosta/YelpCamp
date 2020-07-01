@@ -1,5 +1,6 @@
 var Campground = require("../models/campground");
 var Comment = require("../models/comment");
+var User = require("../models/user");
 
 // all the middleare goes here
 var middlewareObj = {};
@@ -52,6 +53,21 @@ middlewareObj.isLoggedIn = function(req, res, next){
     }
     req.flash("error", "You need to be logged in to do that");
     res.redirect("/login");
+}
+
+middlewareObj.isNotVerified = async function(req, res, next) {
+    try {
+        const user = await User.findOne({ username: req.body.username });
+        if (user.isVerified) {
+            return next();
+        }
+        req.flash('error', 'Your account has not been verified. Please check your email to verify your account');
+        return res.redirect('/campgrounds');
+    } catch (error) {
+        console.log(error);
+        req.flash('error', 'Something went wrong. Please contact us for assistance.');
+        res.redirect('/campgrounds');
+    }
 }
 
 module.exports = middlewareObj;

@@ -6,6 +6,14 @@ var Campground = require("../models/campground");
 var async = require("async");
 var nodemailer = require("nodemailer");
 var crypto = require("crypto");
+const { isNotVerified } = require("../middleware");
+var smtpTransport = nodemailer.createTransport({
+  service: 'Gmail', 
+  auth: {
+    user: process.env.EMAILUSER,
+    pass: process.env.EMAILPW
+  }
+});
 
 //root route
 router.get("/", function(req, res){
@@ -18,28 +26,80 @@ router.get("/register", function(req, res){
 });
 
 //handle sign up logic
-router.post("/register", function(req, res){
+router.post("/register", async function(req, res){
     var newUser = new User({
         username: req.body.username,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         email: req.body.email,
+        emailToken: crypto.randomBytes(64).toString('hex'),
+        isVerified: false,
         avatar: req.body.avatar
     });
-    if(req.body.adminCode === "gandalf") {
+    if(req.body.adminCode === process.env.ADMINCODE) {
         newUser.isAdmin = true;
     }
-    User.register(newUser, req.body.password, function(err, user){
+    User.register(newUser, req.body.password, async function(err, user){
         if(err){
             req.flash("error", err.message);
             return res.render("register");
         }
-        passport.authenticate("local")(req, res, function(){
+        /* passport.authenticate("local")(req, res, function(){
             req.flash("success", "Wellcome to the YelpCamp " + user.username);
             res.redirect("/campgrounds"); 
-        });
+        }); */
+        const msg = {
+          from: "noreply@email.com",
+          to: user.email,
+          subject: "Yelp Camp - verify your email",
+          text: `
+            Hello ${user.firstName}, thanks for registering on our site.
+            Please copy and paste the address below to verify your account.
+            http://${req.headers.host}/verify-email?token=${user.emailToken}
+          `,
+          html: `
+            <h1>Hello ${user.firstName}, </h1>
+            <p>Thanks for registering on our site.</p>
+            <a href="http://${req.headers.host}/verify-email?token=${user.emailToken}">Verify your account</a>
+          `
+        }
+        try {
+          //await sgMail.send(msg);
+          await smtpTransport.sendMail(msg);
+          req.flash('success', 'Thanks for registering. Please check your email to verify your account.')
+          res.redirect('/campgrounds');
+        } catch (error) {
+          console.log(error);
+          req.flash('error', 'Something went wrong. Please contact us for assistance');
+          res.redirect('/campgrounds');
+        }
     });
 });
+
+// email verification route
+router.get('/verify-email', async(req, res, next) => {
+  try {
+    const user = await User.findOne({ emailToken: req.query.token });
+    if (!user) {
+      req.flash('error', 'Token is invalid. Pleasse contact us for assistance.');
+      return res.redirect('/campgrounds');
+    }
+    user.emailToken = null;
+    user.isVerified = true;
+    await user.save();
+    await req.login(user, async (err) => {
+      if(err) return next(err);
+      req.flash('success', `Welcome to Yelp Camp ${user.username}`);
+      const redirectUrl = req.session.redirectTo || '/campgrounds';
+      delete req.session.redirectTo;
+      res.redirect(redirectUrl);
+    });
+  } catch (error) {
+    console.log(error);
+    req.flash('error', 'Something went wrong. Please contact us for assistance');
+    res.redirect('/campgrounds');
+  }
+})
 
 //show login form
 router.get("/login", function(req, res){
@@ -47,7 +107,7 @@ router.get("/login", function(req, res){
 });
 
 //handling login logic
-router.post("/login", passport.authenticate("local", 
+router.post("/login", isNotVerified, passport.authenticate("local", 
     {
         successRedirect: "/campgrounds",
         failureRedirect: "/login"
@@ -90,13 +150,6 @@ router.post('/forgot', function(req, res, next) {
       });
     },
     function(token, user, done) {
-      var smtpTransport = nodemailer.createTransport({
-        service: 'Gmail', 
-        auth: {
-          user: 'tiagokuste@gmail.com',
-          pass: process.env.GMAILPW
-        }
-      });
       var mailOptions = {
         to: user.email,
         from: 'tiagokuste@gmail.com',
