@@ -6,7 +6,7 @@ var Campground = require("../models/campground");
 var async = require("async");
 var nodemailer = require("nodemailer");
 var crypto = require("crypto");
-const { isNotVerified } = require("../middleware");
+const { isNotVerified, isLoggedIn } = require("../middleware");
 var smtpTransport = nodemailer.createTransport({
   service: 'Gmail', 
   auth: {
@@ -246,6 +246,41 @@ router.get("/users/:id", function(req, res) {
             res.render("users/show", {user: foundUser, campgrounds: campgrounds});
         })
     });
+});
+
+// GET /contact
+router.get('/contact', isNotVerified, (req, res) => {
+  res.render('contact');
+});
+
+// POST /contact
+router.post('/contact', async (req, res) => {
+  let { name, email, message } = req.body;
+  name = req.sanitize(name);
+  email = req.sanitize(email);
+  message = req.sanitize(message);
+  const msg = {
+    to: process.env.EMAILUSER,
+    from: email,
+    subject: `YelpCamp Contact Form Submission from ${name}`,
+    text: message,
+    html: `
+    <h1>Hi there, this email is from, ${name}</h1>
+    <p>${message}</p>
+    `,
+  };
+  try {
+    await smtpTransport.sendMail(msg);
+    req.flash('success', 'Thank you for your email, we will get back to you shortly.');
+    res.redirect('/contact');
+  } catch (error) {
+    console.error(error);
+    if (error.response) {
+      console.error(error.response.body)
+    }
+    req.flash('error', 'Sorry, something went wrong, please contact admin@website.com');
+    res.redirect('back');
+  }
 });
 
 module.exports = router;

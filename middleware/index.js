@@ -59,13 +59,14 @@ middlewareObj.isNotVerified = async function(req, res, next) {
     try {
         const user = await User.findOne({ username: req.body.username });
         if (user.isVerified) {
+            console.log("try: ");
             return next();
         }
         req.flash('error', 'Your account has not been verified. Please check your email to verify your account');
         return res.redirect('/campgrounds');
     } catch (error) {
         console.log(error);
-        req.flash('error', 'Something went wrong. Please contact us for assistance.');
+        req.flash('error', 'Something went wrong. We could not verify you. Please contact us for assistance.');
         res.redirect('/campgrounds');
     }
 }
